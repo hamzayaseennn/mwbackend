@@ -4,6 +4,7 @@ const app = require('./src/app');
 const { connectDB } = require('./src/config/db');
 const { Server } = require('socket.io');
 
+// Railway provides PORT environment variable, fallback to 5000 for local development
 const PORT = process.env.PORT || 5000;
 
 // Create HTTP server

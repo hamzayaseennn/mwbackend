@@ -33,7 +33,8 @@ const invoiceSchema = new mongoose.Schema({
   invoiceNumber: {
     type: String,
     unique: true,
-    trim: true
+    trim: true,
+    sparse: true // Allow null values but ensure uniqueness when present
   },
   date: {
     type: Date,
@@ -115,8 +116,7 @@ invoiceSchema.pre('save', async function(next) {
   next();
 });
 
-// Index for search
-invoiceSchema.index({ invoiceNumber: 1 });
+// Index for search (invoiceNumber already has unique index, so we don't need to add it again)
 invoiceSchema.index({ customer: 1, date: -1 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);
