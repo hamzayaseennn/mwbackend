@@ -21,19 +21,30 @@
    - Set the root directory to `backend` (if not already set)
    - The start command is already configured in `package.json` as `npm start`
 
-4. **Add Environment Variables:**
+4. **Add Environment Variables (CRITICAL):**
    - Go to your service → Variables tab
-   - Add the following environment variables:
-     - `MONGODB_URI` - Your MongoDB Atlas connection string
-       ```
-       mongodb+srv://momentum:Qwerty%4012345@cluster0.kkywdqf.mongodb.net/momentum-pos?appName=Cluster0&retryWrites=true&w=majority
-       ```
-     - `JWT_SECRET` - Your JWT secret key (use a strong random string)
-     - `FRONTEND_URL` - Set to `https://www.motorworks.pk` (your frontend deployed on Vercel)
-     - `NODE_ENV` - Set to `production`
-     - `EMAIL_USER` - (Optional) Email service user
-     - `EMAIL_PASSWORD` - (Optional) Email service password
-     - `PORT` - Railway will automatically set this, but you can leave it as default
+   - **⚠️ IMPORTANT: Add these variables BEFORE deploying, or your deployment will fail!**
+   - Click "New Variable" for each one:
+   
+   **Required Variables:**
+   - `MONGODB_URI` ⚠️ **REQUIRED** - Your MongoDB Atlas connection string
+     ```
+     mongodb+srv://momentum:Qwerty%4012345@cluster0.kkywdqf.mongodb.net/momentum-pos?appName=Cluster0&retryWrites=true&w=majority
+     ```
+     - **Copy this EXACTLY** - Make sure there are no extra spaces
+     - This is the MOST IMPORTANT variable - without it, your app will try to connect to local MongoDB and fail
+   
+   - `JWT_SECRET` ⚠️ **REQUIRED** - Your JWT secret key (use a strong random string)
+     - Example: `your-super-secret-jwt-key-change-this-in-production-12345`
+   
+   - `FRONTEND_URL` ⚠️ **REQUIRED** - Set to `https://www.motorworks.pk`
+   
+   - `NODE_ENV` - Set to `production`
+   
+   **Optional Variables:**
+   - `EMAIL_USER` - (Optional) Email service user
+   - `EMAIL_PASSWORD` - (Optional) Email service password
+   - `PORT` - Railway automatically sets this, don't add it manually
 
 5. **Configure MongoDB Atlas:**
    - Go to MongoDB Atlas → Network Access
@@ -90,10 +101,15 @@ After deployment, you can check if your backend is running:
    - Check that all dependencies are in `package.json`
    - Verify Node.js version compatibility
 
-2. **MongoDB connection fails:**
-   - Verify `MONGODB_URI` is set correctly in Railway variables
-   - Check MongoDB Atlas Network Access whitelist
+2. **MongoDB connection fails (Error: connect ECONNREFUSED 127.0.0.1:27017):**
+   - **This error means `MONGODB_URI` is NOT set in Railway!**
+   - Go to Railway Dashboard → Your Service → Variables
+   - Verify `MONGODB_URI` exists and has the correct value
+   - The value should start with `mongodb+srv://` (MongoDB Atlas)
+   - If missing, add it and Railway will auto-redeploy
+   - Check MongoDB Atlas Network Access whitelist (add 0.0.0.0/0 for all IPs)
    - Ensure MongoDB Atlas user has proper permissions
+   - **Common mistake**: Forgetting to add the variable or having a typo in the variable name
 
 3. **CORS errors:**
    - Verify `FRONTEND_URL` is set to `https://www.motorworks.pk`
