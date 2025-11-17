@@ -1,8 +1,9 @@
 const ServiceHistory = require('../models/ServiceHistory');
 const Vehicle = require('../models/Vehicle');
 const Customer = require('../models/Customer');
+const Job = require('../models/Job');
 
-// @desc    Get all service history
+// @desc    Get all service history (including completed jobs)
 // @route   GET /api/service-history
 // @access  Private
 const getAllServiceHistory = async (req, res) => {
@@ -18,16 +19,81 @@ const getAllServiceHistory = async (req, res) => {
       query.customer = customer;
     }
 
+    // Get service history entries
     const serviceHistory = await ServiceHistory.find(query)
       .populate('vehicle', 'make model year plateNo')
       .populate('customer', 'name phone')
-      .populate('job', 'title status')
+      .populate('job', 'title status description technician amount createdAt')
       .sort({ serviceDate: -1 });
+
+    // Get completed/delivered jobs that match the criteria
+    let jobQuery = {
+      status: { $in: ['COMPLETED', 'DELIVERED'] }
+    };
+
+    let vehiclePlateNo = null;
+    if (vehicle) {
+      // Find jobs for this vehicle by matching plate number
+      const vehicleDoc = await Vehicle.findById(vehicle);
+      if (vehicleDoc && vehicleDoc.plateNo) {
+        vehiclePlateNo = vehicleDoc.plateNo;
+        jobQuery['vehicle.plateNo'] = vehicleDoc.plateNo;
+      }
+    }
+
+    if (customer) {
+      jobQuery.customer = customer;
+    }
+
+    const completedJobs = await Job.find(jobQuery)
+      .populate('customer', 'name phone')
+      .sort({ createdAt: -1 });
+
+    // Get service history job IDs to avoid duplicates
+    const serviceHistoryJobIds = serviceHistory
+      .filter(sh => sh.job)
+      .map(sh => sh.job._id ? sh.job._id.toString() : sh.job.toString());
+
+    // Filter out jobs that already have service history entries
+    const uniqueJobs = completedJobs.filter(job => {
+      const jobIdStr = job._id.toString();
+      return !serviceHistoryJobIds.includes(jobIdStr);
+    });
+
+    // Convert jobs to service history format and combine
+    const jobHistory = uniqueJobs.map(job => ({
+      _id: job._id,
+      job: job._id,
+      vehicle: vehicle || null,
+      customer: job.customer,
+      serviceDate: job.updatedAt || job.createdAt,
+      description: job.title + (job.description ? ` - ${job.description}` : ''),
+      cost: job.amount || 0,
+      technician: job.technician || null,
+      mileage: null,
+      notes: null,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      isFromJob: true, // Flag to identify this came from a job
+      jobDetails: {
+        title: job.title,
+        description: job.description,
+        status: job.status,
+        vehicle: job.vehicle
+      }
+    }));
+
+    // Combine service history and job history, sort by date
+    const allHistory = [...serviceHistory, ...jobHistory].sort((a, b) => {
+      const dateA = new Date(a.serviceDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.serviceDate || b.createdAt || 0).getTime();
+      return dateB - dateA; // Most recent first
+    });
 
     res.status(200).json({
       success: true,
-      count: serviceHistory.length,
-      data: serviceHistory
+      count: allHistory.length,
+      data: allHistory
     });
   } catch (error) {
     console.error('Get all service history error:', error);

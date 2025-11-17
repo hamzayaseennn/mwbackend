@@ -165,6 +165,9 @@ const login = async (req, res) => {
     const refreshToken = signRefreshToken({ id: user._id, role: user.role });
 
     // Store refresh token in DB
+    if (!Array.isArray(user.refreshTokens)) {
+      user.refreshTokens = [];
+    }
     user.refreshTokens.push({ token: refreshToken });
     await user.save({ validateBeforeSave: false });
 

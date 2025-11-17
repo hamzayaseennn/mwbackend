@@ -1,6 +1,17 @@
 // WhatsApp service using Twilio API
 // For production, you'll need to set up Twilio WhatsApp Business API
 
+let twilioClient = null;
+
+const getTwilioClient = () => {
+  if (twilioClient) return twilioClient;
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) return null;
+  const twilio = require('twilio');
+  twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  return twilioClient;
+};
+
 const sendWhatsAppMessage = async (to, message) => {
   try {
     // Check if Twilio is configured
@@ -16,19 +27,27 @@ const sendWhatsAppMessage = async (to, message) => {
       return { success: true, messageId: 'dev-mode-' + Date.now() };
     }
 
-    // Uncomment and install twilio package when ready to use
-    // const twilio = require('twilio');
-    // const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    
-    // const result = await client.messages.create({
-    //   from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
-    //   to: `whatsapp:${to}`,
-    //   body: message
-    // });
+    const client = getTwilioClient();
+    const fromNumber = process.env.TWILIO_WHATSAPP_FROM; // e.g., +14155238886 (Twilio sandbox) or your approved number
 
-    // For now, return success in dev mode
-    console.log(`✅ WhatsApp message would be sent to ${to}`);
-    return { success: true, messageId: 'dev-mode-' + Date.now() };
+    if (!client || !fromNumber) {
+      console.log('\n========================================');
+      console.log('📱 WHATSAPP MESSAGE (Development Mode)');
+      console.log('========================================');
+      console.log(`To: ${to}`);
+      console.log(`Message: ${message}`);
+      console.log('========================================\n');
+      return { success: true, messageId: 'dev-mode-' + Date.now() };
+    }
+
+    const result = await client.messages.create({
+      from: `whatsapp:${fromNumber}`,
+      to: `whatsapp:${to}`,
+      body: message
+    });
+
+    console.log(`✅ WhatsApp message sent to ${to} (SID: ${result.sid})`);
+    return { success: true, messageId: result.sid };
   } catch (error) {
     console.error('❌ Error sending WhatsApp message:', error.message);
     

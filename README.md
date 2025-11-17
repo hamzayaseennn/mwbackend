@@ -2,12 +2,6 @@
 
 Node.js + Express + MongoDB backend API with Socket.IO for real-time updates.
 
-## Railway Deployment
-
-For Railway deployment, see [railway.md](./railway.md) for detailed instructions.
-
-**Important**: Make sure to set the `MONGODB_URI` environment variable in Railway. The app will not start without it.
-
 ## Setup
 
 1. Navigate to the backend directory:

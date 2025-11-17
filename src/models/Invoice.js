@@ -116,7 +116,7 @@ invoiceSchema.pre('save', async function(next) {
   next();
 });
 
-// Index for search (invoiceNumber already has unique index, so we don't need to add it again)
+// Index for search (invoiceNumber already has unique index, so we skip it)
 invoiceSchema.index({ customer: 1, date: -1 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);
