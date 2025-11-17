@@ -12,13 +12,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.FRONTEND_URL,
-      'https://www.motorworks.pk',
-      'https://motorworks.pk',
-      'http://localhost:5173',
-      'http://localhost:3000'
-    ].filter(Boolean),
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
     credentials: true
   }
