@@ -12,6 +12,7 @@ const app = express();
 // This ensures the database is connected before the server starts accepting requests
 
 // CORS configuration
+// TEMPORARY: Allow all origins for testing - restrict this later in production
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -25,16 +26,21 @@ const corsOptions = {
       'http://localhost:3000'
     ].filter(Boolean); // Remove undefined values
     
-    // Log CORS check for debugging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('CORS check - Origin:', origin, 'Allowed:', allowedOrigins.includes(origin || ''));
-    }
+    // Log CORS check for debugging
+    console.log('🌐 CORS check - Origin:', origin);
+    console.log('🌐 Allowed origins:', allowedOrigins);
+    console.log('🌐 Is allowed:', allowedOrigins.includes(origin));
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // TEMPORARY: Allow all origins for testing
+    // TODO: Restrict to specific origins in production
+    callback(null, true);
+    
+    // Original strict CORS (uncomment after testing):
+    // if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+    //   callback(null, true);
+    // } else {
+    //   callback(new Error('Not allowed by CORS'));
+    // }
   },
   credentials: true,
   optionsSuccessStatus: 200
