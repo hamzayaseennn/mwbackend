@@ -4,9 +4,27 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
-const { isConnected } = require('./config/db');
+const { isConnected, connectDB } = require('./config/db');
 
 const app = express();
+
+// Connect to MongoDB on Vercel (serverless functions need connection per invocation)
+// For Vercel, we'll connect on first request if not already connected
+if (process.env.VERCEL) {
+  // On Vercel, connect to DB on first request
+  app.use(async (req, res, next) => {
+    if (mongoose.connection.readyState === 0) {
+      try {
+        await connectDB();
+      } catch (error) {
+        console.error('MongoDB connection error on Vercel:', error);
+      }
+    }
+    next();
+  });
+} else {
+  // For local development, connect on startup (handled in server.js)
+}
 
 // CORS configuration
 const corsOptions = {
@@ -16,10 +34,13 @@ const corsOptions = {
     
     const allowedOrigins = [
       process.env.FRONTEND_URL,
-      'http://localhost:5173'
+      'http://localhost:5173',
+      'http://localhost:3000',
+      // Add your Vercel frontend URL here when deployed
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
     ].filter(Boolean); // Remove undefined values
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development' || process.env.VERCEL) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
