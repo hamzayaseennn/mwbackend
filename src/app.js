@@ -8,50 +8,8 @@ const { isConnected, connectDB } = require('./config/db');
 
 const app = express();
 
-// Connect to MongoDB on Vercel (serverless functions need connection per invocation)
-// For Vercel, we'll connect on first request if not already connected
-let dbConnectionPromise = null;
-
-if (process.env.VERCEL || process.env.VERCEL_ENV) {
-  // On Vercel, connect to DB on first request and reuse connection
-  app.use(async (req, res, next) => {
-    // If already connected, proceed
-    if (mongoose.connection.readyState === 1) {
-      return next();
-    }
-    
-    // If connection is in progress, wait for it
-    if (dbConnectionPromise) {
-      try {
-        await dbConnectionPromise;
-        return next();
-      } catch (error) {
-        // Connection failed, but continue to allow health check
-        console.error('MongoDB connection failed:', error.message);
-        return next();
-      }
-    }
-    
-    // Start new connection
-    if (mongoose.connection.readyState === 0) {
-      dbConnectionPromise = connectDB().catch(error => {
-        // connectDB now returns null instead of throwing on Vercel
-        console.error('MongoDB connection attempt failed:', error?.message || 'Unknown error');
-        return null;
-      });
-      
-      const result = await dbConnectionPromise;
-      if (result === null) {
-        console.warn('⚠️  MongoDB connection failed - some features may not work');
-        console.warn('⚠️  Please check MongoDB Atlas Network Access and MONGODB_URI in Vercel');
-      }
-    }
-    
-    next();
-  });
-} else {
-  // For local development, connect on startup (handled in server.js)
-}
+// MongoDB connection is handled in server.js on startup
+// This ensures the database is connected before the server starts accepting requests
 
 // CORS configuration
 const corsOptions = {
@@ -64,12 +22,10 @@ const corsOptions = {
       'https://www.motorworks.pk', // Production frontend domain
       'https://motorworks.pk', // Also allow without www
       'http://localhost:5173',
-      'http://localhost:3000',
-      // Add your Vercel frontend URL here when deployed
-      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
+      'http://localhost:3000'
     ].filter(Boolean); // Remove undefined values
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development' || process.env.VERCEL) {
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
