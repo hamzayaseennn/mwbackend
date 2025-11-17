@@ -34,6 +34,8 @@ const corsOptions = {
     
     const allowedOrigins = [
       process.env.FRONTEND_URL,
+      'https://www.motorworks.pk', // Production frontend domain
+      'https://motorworks.pk', // Also allow without www
       'http://localhost:5173',
       'http://localhost:3000',
       // Add your Vercel frontend URL here when deployed

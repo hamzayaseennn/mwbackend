@@ -19,7 +19,7 @@
    - Add the following variables:
      - `MONGODB_URI` - Your MongoDB Atlas connection string
      - `JWT_SECRET` - Your JWT secret key
-     - `FRONTEND_URL` - Your frontend URL (e.g., https://your-frontend.vercel.app)
+     - `FRONTEND_URL` - Set to `https://www.motorworks.pk` (production frontend domain)
      - `EMAIL_USER` - (Optional) Email service user
      - `EMAIL_PASSWORD` - (Optional) Email service password
      - `NODE_ENV` - Set to `production`
