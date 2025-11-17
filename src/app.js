@@ -35,16 +35,15 @@ if (process.env.VERCEL || process.env.VERCEL_ENV) {
     // Start new connection
     if (mongoose.connection.readyState === 0) {
       dbConnectionPromise = connectDB().catch(error => {
-        console.error('MongoDB connection error on Vercel:', error.message);
-        // Don't throw - allow requests to continue (health check should work)
+        // connectDB now returns null instead of throwing on Vercel
+        console.error('MongoDB connection attempt failed:', error?.message || 'Unknown error');
         return null;
       });
       
-      try {
-        await dbConnectionPromise;
-      } catch (error) {
-        // Continue even if connection fails
-        console.error('MongoDB connection error:', error.message);
+      const result = await dbConnectionPromise;
+      if (result === null) {
+        console.warn('⚠️  MongoDB connection failed - some features may not work');
+        console.warn('⚠️  Please check MongoDB Atlas Network Access and MONGODB_URI in Vercel');
       }
     }
     
