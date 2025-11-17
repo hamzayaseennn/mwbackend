@@ -1,0 +1,10 @@
+{
+  "BASE_URL": "https://your-railway-app.up.railway.app",
+  "TOKEN": "",
+  "testUser": {
+    "name": "Test Admin",
+    "email": "testadmin@motorworks.pk",
+    "password": "Test@12345"
+  }
+}
+

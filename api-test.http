@@ -1,0 +1,393 @@
+### API Testing File for VSCode REST Client Extension
+### Install: https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+### 
+### Usage:
+### 1. Set variables at the top (BASE_URL and TOKEN)
+### 2. Click "Send Request" above each request
+### 3. After login, copy the token and update @token variable
+
+@BASE_URL = https://your-railway-app.up.railway.app
+@TOKEN = your-jwt-token-here
+
+### ============================================
+### AUTH ENDPOINTS
+### ============================================
+
+### Signup Admin
+POST {{BASE_URL}}/api/auth/signup-admin
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@motorworks.pk",
+  "password": "Admin@12345",
+  "role": "admin"
+}
+
+### Login
+# @name login
+POST {{BASE_URL}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@motorworks.pk",
+  "password": "Admin@12345"
+}
+
+### Get Current User (requires auth)
+GET {{BASE_URL}}/api/auth/me
+Authorization: Bearer {{TOKEN}}
+
+### Send Verification OTP
+POST {{BASE_URL}}/api/auth/send-verification-otp
+Content-Type: application/json
+
+{
+  "email": "admin@motorworks.pk"
+}
+
+### Verify Email
+POST {{BASE_URL}}/api/auth/verify-email
+Content-Type: application/json
+
+{
+  "userId": "user-id-here",
+  "otp": "123456"
+}
+
+### Forgot Password
+POST {{BASE_URL}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "admin@motorworks.pk"
+}
+
+### Reset Password
+POST {{BASE_URL}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "userId": "user-id-here",
+  "otp": "123456",
+  "newPassword": "NewPassword@12345"
+}
+
+### ============================================
+### CUSTOMERS ENDPOINTS
+### ============================================
+
+### Create Customer
+POST {{BASE_URL}}/api/customers
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "phone": "+92 300 1234567",
+  "email": "john.doe@example.com",
+  "address": "123 Main Street, Karachi",
+  "notes": "Regular customer"
+}
+
+### Get All Customers
+GET {{BASE_URL}}/api/customers
+Authorization: Bearer {{TOKEN}}
+
+### Get All Customers with Search
+GET {{BASE_URL}}/api/customers?search=John
+Authorization: Bearer {{TOKEN}}
+
+### Get Customer by ID
+GET {{BASE_URL}}/api/customers/CUSTOMER_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Update Customer
+PUT {{BASE_URL}}/api/customers/CUSTOMER_ID_HERE
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "name": "John Doe Updated",
+  "phone": "+92 300 1234567",
+  "email": "john.updated@example.com",
+  "address": "456 New Street, Lahore"
+}
+
+### Delete Customer
+DELETE {{BASE_URL}}/api/customers/CUSTOMER_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### VEHICLES ENDPOINTS
+### ============================================
+
+### Create Vehicle
+POST {{BASE_URL}}/api/vehicles
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "customer": "CUSTOMER_ID_HERE",
+  "make": "Toyota",
+  "model": "Corolla",
+  "year": 2020,
+  "plateNo": "ABC-123",
+  "mileage": 50000,
+  "lastService": "2024-01-15",
+  "nextService": "2024-07-15",
+  "oilType": "5W-30",
+  "status": "active"
+}
+
+### Get All Vehicles
+GET {{BASE_URL}}/api/vehicles
+Authorization: Bearer {{TOKEN}}
+
+### Get Vehicles by Customer
+GET {{BASE_URL}}/api/vehicles?customer=CUSTOMER_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Get Vehicle by ID
+GET {{BASE_URL}}/api/vehicles/VEHICLE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Update Vehicle
+PUT {{BASE_URL}}/api/vehicles/VEHICLE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "mileage": 55000,
+  "lastService": "2024-02-15"
+}
+
+### Delete Vehicle
+DELETE {{BASE_URL}}/api/vehicles/VEHICLE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### JOB CARDS ENDPOINTS
+### ============================================
+
+### Create Job Card
+POST {{BASE_URL}}/api/jobs
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "customer": "CUSTOMER_ID_HERE",
+  "vehicle": {
+    "make": "Toyota",
+    "model": "Corolla",
+    "year": 2020,
+    "plateNo": "ABC-123"
+  },
+  "title": "Oil Change and Filter Replacement",
+  "description": "Standard oil change with new filter",
+  "status": "IN_PROGRESS",
+  "technician": "Ahmed Ali",
+  "estimatedTimeHours": 2,
+  "amount": 5000
+}
+
+### Get All Jobs
+GET {{BASE_URL}}/api/jobs
+Authorization: Bearer {{TOKEN}}
+
+### Get Jobs by Status
+GET {{BASE_URL}}/api/jobs?status=IN_PROGRESS
+Authorization: Bearer {{TOKEN}}
+
+### Get Job by ID
+GET {{BASE_URL}}/api/jobs/JOB_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Update Job
+PUT {{BASE_URL}}/api/jobs/JOB_ID_HERE
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED",
+  "amount": 5500,
+  "description": "Oil change completed, filter replaced"
+}
+
+### Delete Job
+DELETE {{BASE_URL}}/api/jobs/JOB_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### INVOICES ENDPOINTS
+### ============================================
+
+### Create Invoice
+POST {{BASE_URL}}/api/invoices
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "customer": "CUSTOMER_ID_HERE",
+  "job": "JOB_ID_HERE",
+  "date": "2024-11-17",
+  "vehicle": {
+    "make": "Toyota",
+    "model": "Corolla",
+    "year": 2020,
+    "plateNo": "ABC-123"
+  },
+  "items": [
+    {
+      "description": "Oil Change",
+      "quantity": 1,
+      "price": 3000
+    },
+    {
+      "description": "Oil Filter",
+      "quantity": 1,
+      "price": 2000
+    }
+  ],
+  "subtotal": 5000,
+  "tax": 900,
+  "discount": 0,
+  "amount": 5900,
+  "status": "PAID",
+  "paymentMethod": "Cash",
+  "technician": "Ahmed Ali",
+  "supervisor": "Manager Name"
+}
+
+### Get All Invoices
+GET {{BASE_URL}}/api/invoices
+Authorization: Bearer {{TOKEN}}
+
+### Get Invoices by Status
+GET {{BASE_URL}}/api/invoices?status=PAID
+Authorization: Bearer {{TOKEN}}
+
+### Get Invoice by ID
+GET {{BASE_URL}}/api/invoices/INVOICE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Update Invoice
+PUT {{BASE_URL}}/api/invoices/INVOICE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "status": "PAID",
+  "paymentMethod": "Card"
+}
+
+### Delete Invoice
+DELETE {{BASE_URL}}/api/invoices/INVOICE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### DASHBOARD ENDPOINTS
+### ============================================
+
+### Get Dashboard Summary
+GET {{BASE_URL}}/api/dashboard/summary
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### SERVICE HISTORY ENDPOINTS
+### ============================================
+
+### Get All Service History
+GET {{BASE_URL}}/api/service-history
+Authorization: Bearer {{TOKEN}}
+
+### Get Service History by Vehicle
+GET {{BASE_URL}}/api/service-history?vehicle=VEHICLE_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Get Service History by Customer
+GET {{BASE_URL}}/api/service-history?customer=CUSTOMER_ID_HERE
+Authorization: Bearer {{TOKEN}}
+
+### Create Service History
+POST {{BASE_URL}}/api/service-history
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "vehicle": "VEHICLE_ID_HERE",
+  "customer": "CUSTOMER_ID_HERE",
+  "serviceDate": "2024-11-17",
+  "description": "Regular maintenance",
+  "cost": 5000,
+  "technician": "Ahmed Ali",
+  "mileage": 55000,
+  "notes": "All systems checked"
+}
+
+### ============================================
+### REPORTS ENDPOINTS
+### ============================================
+
+### Get Financial Overview
+GET {{BASE_URL}}/api/reports/financial-overview
+Authorization: Bearer {{TOKEN}}
+
+### Get Revenue Trend
+GET {{BASE_URL}}/api/reports/revenue-trend?months=6
+Authorization: Bearer {{TOKEN}}
+
+### Get Payment Methods
+GET {{BASE_URL}}/api/reports/payment-methods
+Authorization: Bearer {{TOKEN}}
+
+### Get Popular Services
+GET {{BASE_URL}}/api/reports/popular-services
+Authorization: Bearer {{TOKEN}}
+
+### Get Daily Performance
+GET {{BASE_URL}}/api/reports/daily-performance?days=7
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### NOTIFICATIONS ENDPOINTS
+### ============================================
+
+### Get All Notifications
+GET {{BASE_URL}}/api/notifications
+Authorization: Bearer {{TOKEN}}
+
+### Get Notification Stats
+GET {{BASE_URL}}/api/notifications/stats
+Authorization: Bearer {{TOKEN}}
+
+### Get Service Reminders
+GET {{BASE_URL}}/api/notifications/service-reminders
+Authorization: Bearer {{TOKEN}}
+
+### Send Custom Notification
+POST {{BASE_URL}}/api/notifications/custom
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "customerId": "CUSTOMER_ID_HERE",
+  "vehicleId": "VEHICLE_ID_HERE",
+  "title": "Service Reminder",
+  "message": "Your vehicle is due for service",
+  "method": "both"
+}
+
+### ============================================
+### HEALTH CHECK
+### ============================================
+
+### Health Check
+GET {{BASE_URL}}/health
+
+### Test Database Connection
+GET {{BASE_URL}}/api/test-db
+
+### Root Endpoint
+GET {{BASE_URL}}/
+
