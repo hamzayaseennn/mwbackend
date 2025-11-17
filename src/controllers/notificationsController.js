@@ -665,6 +665,144 @@ const getNotificationHistory = async (req, res) => {
   }
 };
 
+// @desc    Create and send custom notification
+// @route   POST /api/notifications/custom
+// @access  Private
+const createCustomNotification = async (req, res) => {
+  try {
+    const { customerId, vehicleId, title, message, method } = req.body; // method: 'email', 'whatsapp', 'both'
+
+    if (!customerId || !title || !message || !method) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer ID, title, message, and method are required'
+      });
+    }
+
+    // Get customer
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    // Get vehicle if provided
+    let vehicle = null;
+    if (vehicleId) {
+      vehicle = await Vehicle.findById(vehicleId);
+    }
+
+    const results = {
+      emailSent: false,
+      whatsappSent: false,
+      notification: null
+    };
+
+    // Create notification record
+    const notification = new Notification({
+      customer: customerId,
+      vehicle: vehicleId || null,
+      type: 'custom',
+      title: title,
+      message: message,
+      priority: 'medium',
+      status: 'pending'
+    });
+
+    // Send email if requested
+    if (method === 'email' || method === 'both') {
+      if (!customer.email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer does not have an email address'
+        });
+      }
+
+      // Send custom email
+      const sendCustomEmail = require('../utils/emailService').sendCustomEmail;
+      const emailResult = await sendCustomEmail(
+        customer.email,
+        customer.name,
+        title,
+        message,
+        vehicle ? {
+          make: vehicle.make,
+          model: vehicle.model,
+          plateNo: vehicle.plateNo,
+          year: vehicle.year
+        } : null
+      );
+
+      if (emailResult.success) {
+        notification.emailSent = true;
+        notification.emailSentAt = new Date();
+        results.emailSent = true;
+      }
+    }
+
+    // Send WhatsApp if requested
+    if (method === 'whatsapp' || method === 'both') {
+      if (!customer.phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer does not have a phone number'
+        });
+      }
+
+      // Format phone number
+      let phoneNumber = customer.phone.replace(/\s+/g, '');
+      if (!phoneNumber.startsWith('+')) {
+        if (phoneNumber.startsWith('0')) {
+          phoneNumber = '+92' + phoneNumber.substring(1);
+        } else if (!phoneNumber.startsWith('92')) {
+          phoneNumber = '+92' + phoneNumber;
+        } else {
+          phoneNumber = '+' + phoneNumber;
+        }
+      }
+
+      // Create custom WhatsApp message
+      const whatsappMessage = `🔔 *${title}*\n\n` +
+        `Hello ${customer.name},\n\n` +
+        `${message}\n\n` +
+        (vehicle ? `Vehicle: *${vehicle.make} ${vehicle.model} (${vehicle.plateNo})*\n\n` : '') +
+        `Thank you,\nMomentum AutoWorks Team`;
+
+      const whatsappResult = await sendWhatsAppMessage(phoneNumber, whatsappMessage);
+
+      if (whatsappResult.success) {
+        notification.whatsappSent = true;
+        notification.whatsappSentAt = new Date();
+        results.whatsappSent = true;
+      }
+    }
+
+    // Update notification status
+    if (results.emailSent || results.whatsappSent) {
+      notification.status = 'sent';
+    } else {
+      notification.status = 'failed';
+    }
+
+    await notification.save();
+    results.notification = notification;
+
+    res.status(200).json({
+      success: true,
+      message: 'Custom notification sent successfully',
+      data: results
+    });
+  } catch (error) {
+    console.error('Create custom notification error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating custom notification'
+    });
+  }
+};
+
 module.exports = {
   getNotifications,
   getNotificationStats,
@@ -672,6 +810,7 @@ module.exports = {
   sendEmailNotification,
   sendWhatsAppNotification,
   sendBulkNotifications,
-  getNotificationHistory
+  getNotificationHistory,
+  createCustomNotification
 };
 

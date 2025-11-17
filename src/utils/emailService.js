@@ -170,6 +170,69 @@ const sendServiceReminderEmail = async (email, name, vehicle, dueDate, daysUntil
   }
 };
 
+// Send custom notification email
+const sendCustomEmail = async (email, name, title, message, vehicle = null) => {
+  try {
+    const transporter = createTransporter();
+    
+    if (!transporter) {
+      console.log('\n========================================');
+      console.log('📧 CUSTOM NOTIFICATION EMAIL (Development Mode)');
+      console.log('========================================');
+      console.log(`To: ${email}`);
+      console.log(`Customer: ${name}`);
+      console.log(`Title: ${title}`);
+      console.log(`Message: ${message}`);
+      if (vehicle) {
+        console.log(`Vehicle: ${vehicle.make} ${vehicle.model} (${vehicle.plateNo})`);
+      }
+      console.log('========================================\n');
+      return { success: true };
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: title,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #c53032; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0;">Momentum AutoWorks</h1>
+          </div>
+          <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #333; margin-top: 0;">${title}</h2>
+            <p style="color: #666; line-height: 1.6;">
+              Hello ${name},
+            </p>
+            <p style="color: #666; line-height: 1.6; white-space: pre-wrap;">
+              ${message}
+            </p>
+            ${vehicle ? `
+            <div style="background-color: white; border: 2px solid #c53032; border-radius: 8px; padding: 20px; margin: 30px 0;">
+              <h3 style="color: #c53032; margin-top: 0;">Vehicle Details</h3>
+              <p style="margin: 5px 0;"><strong>Make/Model:</strong> ${vehicle.make} ${vehicle.model}</p>
+              <p style="margin: 5px 0;"><strong>Plate Number:</strong> ${vehicle.plateNo}</p>
+              ${vehicle.year ? `<p style="margin: 5px 0;"><strong>Year:</strong> ${vehicle.year}</p>` : ''}
+            </div>
+            ` : ''}
+            <p style="color: #666; line-height: 1.6; margin-top: 30px;">
+              Best regards,<br>
+              Momentum AutoWorks Team
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Custom notification email sent to ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error sending custom notification email:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 // Send email (generic function for OTP emails)
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
@@ -207,6 +270,7 @@ module.exports = {
   generateVerificationCode,
   sendVerificationEmail,
   sendServiceReminderEmail,
+  sendCustomEmail,
   sendEmail
 };
 

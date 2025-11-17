@@ -7,7 +7,8 @@ const {
   sendEmailNotification,
   sendWhatsAppNotification,
   sendBulkNotifications,
-  getNotificationHistory
+  getNotificationHistory,
+  createCustomNotification
 } = require('../controllers/notificationsController');
 const { authenticate } = require('../middleware/auth');
 
@@ -21,6 +22,7 @@ router.get('/history', getNotificationHistory);
 router.post('/send-email', sendEmailNotification);
 router.post('/send-whatsapp', sendWhatsAppNotification);
 router.post('/send-bulk', sendBulkNotifications);
+router.post('/custom', createCustomNotification);
 
 module.exports = router;
 

@@ -9,11 +9,11 @@ const notificationSchema = new mongoose.Schema({
   vehicle: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vehicle',
-    required: [true, 'Vehicle is required']
+    required: false // Optional for custom notifications
   },
   type: {
     type: String,
-    enum: ['service_reminder', 'service_overdue', 'payment_reminder', 'general'],
+    enum: ['service_reminder', 'service_overdue', 'payment_reminder', 'general', 'custom'],
     required: true
   },
   title: {
