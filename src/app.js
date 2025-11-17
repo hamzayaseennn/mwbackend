@@ -25,6 +25,11 @@ const corsOptions = {
       'http://localhost:3000'
     ].filter(Boolean); // Remove undefined values
     
+    // Log CORS check for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CORS check - Origin:', origin, 'Allowed:', allowedOrigins.includes(origin || ''));
+    }
+    
     if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
