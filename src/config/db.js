@@ -14,17 +14,13 @@ const connectDB = async () => {
       return;
     }
 
-    // For Vercel serverless, use connection pooling
+    // Connection options for Railway and local development
     const connectionOptions = {
       serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+      maxPoolSize: 10, // Maximum number of connections in the pool
+      minPoolSize: 2, // Minimum number of connections in the pool
+      socketTimeoutMS: 45000, // Socket timeout
     };
-
-    // Add connection pooling options for Vercel
-    if (process.env.VERCEL) {
-      connectionOptions.maxPoolSize = 10;
-      connectionOptions.minPoolSize = 2;
-      connectionOptions.socketTimeoutMS = 45000;
-    }
 
     console.log('Connecting to MongoDB...');
     
