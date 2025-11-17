@@ -10,16 +10,44 @@ const app = express();
 
 // Connect to MongoDB on Vercel (serverless functions need connection per invocation)
 // For Vercel, we'll connect on first request if not already connected
-if (process.env.VERCEL) {
-  // On Vercel, connect to DB on first request
+let dbConnectionPromise = null;
+
+if (process.env.VERCEL || process.env.VERCEL_ENV) {
+  // On Vercel, connect to DB on first request and reuse connection
   app.use(async (req, res, next) => {
-    if (mongoose.connection.readyState === 0) {
+    // If already connected, proceed
+    if (mongoose.connection.readyState === 1) {
+      return next();
+    }
+    
+    // If connection is in progress, wait for it
+    if (dbConnectionPromise) {
       try {
-        await connectDB();
+        await dbConnectionPromise;
+        return next();
       } catch (error) {
-        console.error('MongoDB connection error on Vercel:', error);
+        // Connection failed, but continue to allow health check
+        console.error('MongoDB connection failed:', error.message);
+        return next();
       }
     }
+    
+    // Start new connection
+    if (mongoose.connection.readyState === 0) {
+      dbConnectionPromise = connectDB().catch(error => {
+        console.error('MongoDB connection error on Vercel:', error.message);
+        // Don't throw - allow requests to continue (health check should work)
+        return null;
+      });
+      
+      try {
+        await dbConnectionPromise;
+      } catch (error) {
+        // Continue even if connection fails
+        console.error('MongoDB connection error:', error.message);
+      }
+    }
+    
     next();
   });
 } else {
@@ -71,6 +99,25 @@ const checkDBConnection = (req, res, next) => {
   }
   next();
 };
+
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Momentum POS Backend API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      auth: '/api/auth',
+      customers: '/api/customers',
+      vehicles: '/api/vehicles',
+      jobs: '/api/jobs',
+      invoices: '/api/invoices'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check route
 app.get('/health', (req, res) => {
