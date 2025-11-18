@@ -64,3 +64,4 @@ const Settings = mongoose.model('Settings', settingsSchema);
 
 module.exports = Settings;
 
+
