@@ -1,0 +1,142 @@
+### API Testing for Momentum POS Backend
+### Use REST Client extension in VSCode to run these requests
+### Set variables in settings or use @name = value syntax
+
+@BASE_URL = https://your-railway-app.up.railway.app
+@TOKEN = your-token-here
+
+### ============================================
+### AUTH ENDPOINTS
+### ============================================
+
+### Signup (First user becomes admin automatically)
+POST {{BASE_URL}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "Admin123!",
+  "role": "admin"
+}
+
+### Login
+POST {{BASE_URL}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+### Get Current User (Me)
+GET {{BASE_URL}}/api/auth/me
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### CUSTOMER ENDPOINTS
+### ============================================
+
+### Create Customer
+POST {{BASE_URL}}/api/customers
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "phone": "+92 331 1234567",
+  "email": "john.doe@example.com",
+  "address": "123 Main Street, Karachi, Pakistan",
+  "notes": "Regular customer"
+}
+
+### Get All Customers
+GET {{BASE_URL}}/api/customers
+Authorization: Bearer {{TOKEN}}
+
+### Get All Customers with Search
+GET {{BASE_URL}}/api/customers?search=John
+Authorization: Bearer {{TOKEN}}
+
+### Get Customer by ID
+GET {{BASE_URL}}/api/customers/{{customerId}}
+Authorization: Bearer {{TOKEN}}
+
+### Update Customer
+PUT {{BASE_URL}}/api/customers/{{customerId}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "name": "John Doe Updated",
+  "phone": "+92 331 1234567",
+  "email": "john.updated@example.com",
+  "address": "456 New Street, Lahore, Pakistan"
+}
+
+### Delete Customer
+DELETE {{BASE_URL}}/api/customers/{{customerId}}
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### JOB CARD ENDPOINTS
+### ============================================
+
+### Create Job Card
+POST {{BASE_URL}}/api/jobs
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "customer": "{{customerId}}",
+  "vehicle": {
+    "make": "Toyota",
+    "model": "Corolla",
+    "year": 2020,
+    "plateNo": "ABC-123"
+  },
+  "title": "Engine Oil Change",
+  "description": "Full engine oil change and filter replacement",
+  "status": "PENDING",
+  "technician": "Mike T.",
+  "estimatedTimeHours": 2,
+  "amount": 5000,
+  "notes": "Customer requested premium oil"
+}
+
+### Get All Jobs
+GET {{BASE_URL}}/api/jobs
+Authorization: Bearer {{TOKEN}}
+
+### Get All Jobs by Status
+GET {{BASE_URL}}/api/jobs?status=PENDING
+Authorization: Bearer {{TOKEN}}
+
+### Get Job by ID
+GET {{BASE_URL}}/api/jobs/{{jobId}}
+Authorization: Bearer {{TOKEN}}
+
+### Update Job
+PUT {{BASE_URL}}/api/jobs/{{jobId}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS",
+  "technician": "Chris R.",
+  "amount": 5500,
+  "notes": "Updated notes"
+}
+
+### Delete Job
+DELETE {{BASE_URL}}/api/jobs/{{jobId}}
+Authorization: Bearer {{TOKEN}}
+
+### ============================================
+### DASHBOARD ENDPOINTS
+### ============================================
+
+### Get Dashboard Summary
+GET {{BASE_URL}}/api/dashboard/summary
+Authorization: Bearer {{TOKEN}}
+
