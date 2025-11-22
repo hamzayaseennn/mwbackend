@@ -78,7 +78,7 @@ const getJobById = async (req, res) => {
 // @access  Private
 const createJob = async (req, res) => {
   try {
-    const { customer, vehicle, title, description, status, technician, estimatedTimeHours, amount } = req.body;
+    const { customer, vehicle, title, description, status, technician, estimatedTimeHours, amount, services, notes } = req.body;
 
     // Validate required fields
     if (!customer || !vehicle || !title) {
@@ -113,7 +113,9 @@ const createJob = async (req, res) => {
       status: status || 'PENDING',
       technician,
       estimatedTimeHours,
-      amount: amount || 0
+      amount: amount || 0,
+      services: services || [],
+      notes: notes || ''
     });
 
     // Populate customer for response
@@ -155,7 +157,7 @@ const createJob = async (req, res) => {
 // @access  Private
 const updateJob = async (req, res) => {
   try {
-    const { vehicle, title, description, status, technician, estimatedTimeHours, amount } = req.body;
+    const { vehicle, title, description, status, technician, estimatedTimeHours, amount, services, notes } = req.body;
 
     // Check if job exists
     let job = await Job.findById(req.params.id);
@@ -174,6 +176,8 @@ const updateJob = async (req, res) => {
     if (technician !== undefined) job.technician = technician;
     if (estimatedTimeHours !== undefined) job.estimatedTimeHours = estimatedTimeHours;
     if (amount !== undefined) job.amount = amount;
+    if (services !== undefined) job.services = services;
+    if (notes !== undefined) job.notes = notes;
 
     await job.save();
 

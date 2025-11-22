@@ -18,6 +18,34 @@ const vehicleSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+const serviceSchema = new mongoose.Schema({
+  id: {
+    type: String,
+    required: true
+  },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  estimatedCost: {
+    type: Number,
+    default: 0
+  },
+  estimatedTime: {
+    type: String,
+    trim: true
+  },
+  completed: {
+    type: Boolean,
+    default: false
+  },
+  catalogId: {
+    type: String,
+    default: null
+  }
+}, { _id: false });
+
 const jobSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -54,6 +82,14 @@ const jobSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     default: 0
+  },
+  services: {
+    type: [serviceSchema],
+    default: []
+  },
+  notes: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true
