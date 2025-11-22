@@ -43,6 +43,27 @@ const serviceSchema = new mongoose.Schema({
   catalogId: {
     type: String,
     default: null
+  },
+  // Sub-fields for Oil Change service
+  filter: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  oilGrade: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  oilMake: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  customField: {
+    type: String,
+    trim: true,
+    default: null
   }
 }, { _id: false });
 
