@@ -80,7 +80,7 @@ const getVehicleById = async (req, res) => {
 // @access  Private
 const createVehicle = async (req, res) => {
   try {
-    const { customer, make, model, year, plateNo, mileage, lastService, nextService, oilType, status } = req.body;
+    const { customer, make, model, year, plateNo, vin, mileage, lastService, nextService, oilType, status } = req.body;
 
     if (!customer || !make || !model || !year || !plateNo) {
       return res.status(400).json({
@@ -98,12 +98,36 @@ const createVehicle = async (req, res) => {
       });
     }
 
+    // Check for duplicate vehicle: same customer + plateNo + VIN (if VIN provided)
+    const duplicateQuery = {
+      customer,
+      plateNo: plateNo.trim(),
+      isActive: true
+    };
+    
+    if (vin && vin.trim()) {
+      duplicateQuery.vin = vin.trim();
+    } else {
+      duplicateQuery.vin = null;
+    }
+
+    const existingVehicle = await Vehicle.findOne(duplicateQuery);
+    if (existingVehicle) {
+      return res.status(400).json({
+        success: false,
+        message: vin && vin.trim() 
+          ? 'A vehicle with this customer, plate number, and VIN already exists'
+          : 'A vehicle with this customer and plate number already exists'
+      });
+    }
+
     const vehicle = await Vehicle.create({
       customer,
       make,
       model,
       year,
-      plateNo,
+      plateNo: plateNo.trim(),
+      vin: vin ? vin.trim() : null,
       mileage: mileage || 0,
       lastService: lastService ? new Date(lastService) : undefined,
       nextService: nextService ? new Date(nextService) : undefined,
@@ -147,7 +171,7 @@ const createVehicle = async (req, res) => {
 // @access  Private
 const updateVehicle = async (req, res) => {
   try {
-    const { make, model, year, plateNo, mileage, lastService, nextService, oilType, status } = req.body;
+    const { make, model, year, plateNo, vin, mileage, lastService, nextService, oilType, status } = req.body;
 
     let vehicle = await Vehicle.findById(req.params.id);
     if (!vehicle) {
@@ -157,10 +181,40 @@ const updateVehicle = async (req, res) => {
       });
     }
 
+    // Check for duplicate if plateNo or VIN is being updated
+    if (plateNo !== undefined || vin !== undefined) {
+      const checkPlateNo = plateNo !== undefined ? plateNo.trim() : vehicle.plateNo;
+      const checkVin = vin !== undefined ? (vin ? vin.trim() : null) : vehicle.vin;
+      
+      const duplicateQuery = {
+        customer: vehicle.customer,
+        plateNo: checkPlateNo,
+        isActive: true,
+        _id: { $ne: vehicle._id } // Exclude current vehicle
+      };
+      
+      if (checkVin) {
+        duplicateQuery.vin = checkVin;
+      } else {
+        duplicateQuery.vin = null;
+      }
+
+      const existingVehicle = await Vehicle.findOne(duplicateQuery);
+      if (existingVehicle) {
+        return res.status(400).json({
+          success: false,
+          message: checkVin
+            ? 'A vehicle with this customer, plate number, and VIN already exists'
+            : 'A vehicle with this customer and plate number already exists'
+        });
+      }
+    }
+
     if (make !== undefined) vehicle.make = make;
     if (model !== undefined) vehicle.model = model;
     if (year !== undefined) vehicle.year = year;
-    if (plateNo !== undefined) vehicle.plateNo = plateNo;
+    if (plateNo !== undefined) vehicle.plateNo = plateNo.trim();
+    if (vin !== undefined) vehicle.vin = vin ? vin.trim() : null;
     if (mileage !== undefined) vehicle.mileage = mileage;
     if (lastService !== undefined) vehicle.lastService = lastService ? new Date(lastService) : null;
     if (nextService !== undefined) vehicle.nextService = nextService ? new Date(nextService) : null;

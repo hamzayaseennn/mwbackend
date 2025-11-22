@@ -25,6 +25,11 @@ const vehicleSchema = new mongoose.Schema({
     required: [true, 'Plate number is required'],
     trim: true
   },
+  vin: {
+    type: String,
+    trim: true,
+    default: null
+  },
   mileage: {
     type: Number,
     default: 0
@@ -54,6 +59,9 @@ const vehicleSchema = new mongoose.Schema({
 
 // Index for search
 vehicleSchema.index({ make: 'text', model: 'text', plateNo: 'text' });
+
+// Index for efficient duplicate checking
+vehicleSchema.index({ customer: 1, plateNo: 1, vin: 1 });
 
 const Vehicle = mongoose.model('Vehicle', vehicleSchema);
 
