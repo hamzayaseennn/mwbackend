@@ -64,6 +64,16 @@ const serviceSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: null
+  },
+  subOptions: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  notes: {
+    type: String,
+    trim: true,
+    default: null
   }
 }, { _id: false });
 

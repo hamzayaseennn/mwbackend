@@ -98,25 +98,27 @@ const createVehicle = async (req, res) => {
       });
     }
 
-    // Check for duplicate vehicle: same customer + plateNo + VIN (if VIN provided)
-    const duplicateQuery = {
+    // Check for duplicate vehicle: same customer + plateNo (VIN is optional)
+    // First check by customer + plateNo (most important)
+    let existingVehicle = await Vehicle.findOne({
       customer,
-      plateNo: plateNo.trim(),
+      plateNo: plateNo.trim().toUpperCase(),
       isActive: true
-    };
+    });
     
-    if (vin && vin.trim()) {
-      duplicateQuery.vin = vin.trim();
-    } else {
-      duplicateQuery.vin = null;
+    // If VIN is provided, also check for VIN match (even if plateNo differs)
+    if (vin && vin.trim() && !existingVehicle) {
+      existingVehicle = await Vehicle.findOne({
+        customer,
+        vin: vin.trim().toUpperCase(),
+        isActive: true
+      });
     }
-
-    const existingVehicle = await Vehicle.findOne(duplicateQuery);
     if (existingVehicle) {
       return res.status(400).json({
         success: false,
         message: vin && vin.trim() 
-          ? 'A vehicle with this customer, plate number, and VIN already exists'
+          ? 'A vehicle with this customer, plate number, or VIN already exists'
           : 'A vehicle with this customer and plate number already exists'
       });
     }
@@ -126,8 +128,8 @@ const createVehicle = async (req, res) => {
       make,
       model,
       year,
-      plateNo: plateNo.trim(),
-      vin: vin ? vin.trim() : null,
+      plateNo: plateNo.trim().toUpperCase(),
+      vin: vin ? vin.trim().toUpperCase() : null,
       mileage: mileage || 0,
       lastService: lastService ? new Date(lastService) : undefined,
       nextService: nextService ? new Date(nextService) : undefined,
@@ -183,28 +185,31 @@ const updateVehicle = async (req, res) => {
 
     // Check for duplicate if plateNo or VIN is being updated
     if (plateNo !== undefined || vin !== undefined) {
-      const checkPlateNo = plateNo !== undefined ? plateNo.trim() : vehicle.plateNo;
-      const checkVin = vin !== undefined ? (vin ? vin.trim() : null) : vehicle.vin;
+      const checkPlateNo = plateNo !== undefined ? plateNo.trim().toUpperCase() : vehicle.plateNo?.toUpperCase();
+      const checkVin = vin !== undefined ? (vin ? vin.trim().toUpperCase() : null) : (vehicle.vin ? vehicle.vin.toUpperCase() : null);
       
-      const duplicateQuery = {
+      // Check by plateNo first (most important)
+      let existingVehicle = await Vehicle.findOne({
         customer: vehicle.customer,
         plateNo: checkPlateNo,
         isActive: true,
         _id: { $ne: vehicle._id } // Exclude current vehicle
-      };
+      });
       
-      if (checkVin) {
-        duplicateQuery.vin = checkVin;
-      } else {
-        duplicateQuery.vin = null;
+      // If VIN is provided and no plateNo match, check by VIN
+      if (!existingVehicle && checkVin) {
+        existingVehicle = await Vehicle.findOne({
+          customer: vehicle.customer,
+          vin: checkVin,
+          isActive: true,
+          _id: { $ne: vehicle._id }
+        });
       }
-
-      const existingVehicle = await Vehicle.findOne(duplicateQuery);
       if (existingVehicle) {
         return res.status(400).json({
           success: false,
           message: checkVin
-            ? 'A vehicle with this customer, plate number, and VIN already exists'
+            ? 'A vehicle with this customer, plate number, or VIN already exists'
             : 'A vehicle with this customer and plate number already exists'
         });
       }
@@ -213,8 +218,8 @@ const updateVehicle = async (req, res) => {
     if (make !== undefined) vehicle.make = make;
     if (model !== undefined) vehicle.model = model;
     if (year !== undefined) vehicle.year = year;
-    if (plateNo !== undefined) vehicle.plateNo = plateNo.trim();
-    if (vin !== undefined) vehicle.vin = vin ? vin.trim() : null;
+    if (plateNo !== undefined) vehicle.plateNo = plateNo.trim().toUpperCase();
+    if (vin !== undefined) vehicle.vin = vin ? vin.trim().toUpperCase() : null;
     if (mileage !== undefined) vehicle.mileage = mileage;
     if (lastService !== undefined) vehicle.lastService = lastService ? new Date(lastService) : null;
     if (nextService !== undefined) vehicle.nextService = nextService ? new Date(nextService) : null;
