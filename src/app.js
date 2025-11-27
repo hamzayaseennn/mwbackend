@@ -155,6 +155,7 @@ app.use('/api/reports', checkDBConnection, require('./routes/reportsRoutes'));
 app.use('/api/notifications', checkDBConnection, require('./routes/notificationsRoutes'));
 app.use('/api/comments', checkDBConnection, require('./routes/commentRoutes'));
 app.use('/api/settings', checkDBConnection, require('./routes/settingsRoutes'));
+app.use('/api/catalog', checkDBConnection, require('./routes/catalogRoutes'));
 
 // 404 handler
 app.use((req, res) => {
