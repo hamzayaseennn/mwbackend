@@ -20,11 +20,26 @@ const getAllServiceHistory = async (req, res) => {
     }
 
     // Get service history entries
-    const serviceHistory = await ServiceHistory.find(query)
+    const serviceHistoryDocs = await ServiceHistory.find(query)
       .populate('vehicle', 'make model year plateNo')
       .populate('customer', 'name phone')
-      .populate('job', 'title status description technician amount createdAt')
+      .populate('job', 'title status description technician amount vehicle services createdAt updatedAt')
       .sort({ serviceDate: -1 });
+
+    const serviceHistory = serviceHistoryDocs.map(entry => {
+      const doc = entry.toObject();
+      if (doc.job) {
+        doc.jobDetails = {
+          title: doc.job.title,
+          description: doc.job.description,
+          status: doc.job.status,
+          vehicle: doc.job.vehicle || null,
+          services: doc.job.services || [],
+          amount: doc.job.amount || 0
+        };
+      }
+      return doc;
+    });
 
     // Get completed/delivered jobs that match the criteria
     let jobQuery = {
@@ -79,7 +94,9 @@ const getAllServiceHistory = async (req, res) => {
         title: job.title,
         description: job.description,
         status: job.status,
-        vehicle: job.vehicle
+        vehicle: job.vehicle,
+        services: job.services || [],
+        amount: job.amount || 0
       }
     }));
 

@@ -19,9 +19,20 @@ const vehicleSchema = new mongoose.Schema({
 }, { _id: false });
 
 const serviceSchema = new mongoose.Schema({
+  // Frontend-generated id to keep track of services before persisting
   id: {
     type: String,
     required: true
+  },
+  // Reference to catalog service (if selected from catalog)
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Catalog',
+    default: null
+  },
+  catalogId: {
+    type: String,
+    default: null
   },
   name: {
     type: String,
@@ -32,40 +43,27 @@ const serviceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  price: {
+    type: Number,
+    default: 0
+  },
   estimatedTime: {
     type: String,
     trim: true
+  },
+  durationMinutes: {
+    type: Number,
+    default: 0
   },
   completed: {
     type: Boolean,
     default: false
   },
-  catalogId: {
-    type: String,
-    default: null
-  },
-  // Sub-fields for Oil Change service
-  filter: {
-    type: String,
-    trim: true,
-    default: null
-  },
-  oilGrade: {
-    type: String,
-    trim: true,
-    default: null
-  },
-  oilMake: {
-    type: String,
-    trim: true,
-    default: null
-  },
-  customField: {
-    type: String,
-    trim: true,
-    default: null
+  details: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
-}, { _id: false });
+}, { _id: false, minimize: false });
 
 const jobSchema = new mongoose.Schema({
   customer: {
