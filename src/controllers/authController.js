@@ -3,6 +3,28 @@ const { signAccessToken, signRefreshToken } = require('../utils/jwt');
 const { hashOTP } = require('../utils/crypto');
 const { sendEmail } = require('../utils/emailService');
 
+// Helper to normalize role to frontend format
+const normalizeRole = (role) => {
+  const roleMap = {
+    'admin': 'Admin',
+    'staff': 'Supervisor',
+    'technician': 'Technician',
+    'cashier': 'Cashier',
+    'Admin': 'Admin',
+    'Supervisor': 'Supervisor',
+    'Technician': 'Technician',
+    'Cashier': 'Cashier'
+  };
+  return roleMap[role] || 'Technician';
+};
+
+// Helper to get status from isActive
+const getStatus = (user) => {
+  if (!user.isEmailVerified) return 'pending';
+  if (!user.isActive) return 'blocked';
+  return 'active';
+};
+
 // @desc    Sign up a new user
 // @route   POST /api/auth/signup
 // @access  Public
@@ -21,22 +43,23 @@ const signup = async (req, res) => {
 
     // Check if this is the first user in the database
     const userCount = await User.countDocuments();
-    let userRole = role || 'staff';
+    let userRole = role || 'Technician';
 
     // If no users exist, make first user admin automatically
     if (userCount === 0) {
-      userRole = 'admin';
+      userRole = 'Admin';
       console.log('\n========================================');
       console.log('👑 FIRST USER - AUTOMATICALLY SET AS ADMIN');
       console.log('========================================\n');
     } else {
-      // For subsequent users, default to 'staff' role
-      // Only allow 'staff', 'technician', or 'cashier' roles for public signup
+      // For subsequent users, default to 'Technician' role
+      // Only allow 'Supervisor', 'Technician', or 'Cashier' roles for public signup
       // Admin role can only be assigned by existing admins
-      if (role && ['staff', 'technician', 'cashier'].includes(role)) {
-        userRole = role;
+      const allowedRoles = ['Supervisor', 'Technician', 'Cashier', 'staff', 'technician', 'cashier'];
+      if (role && allowedRoles.includes(role)) {
+        userRole = normalizeRole(role);
       } else {
-        userRole = 'staff';
+        userRole = 'Technician';
       }
     }
 
@@ -97,14 +120,15 @@ const signup = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: userRole === 'admin' 
+      message: userRole === 'admin' || userRole === 'Admin'
         ? 'Admin user created successfully. Please verify your email to complete setup.'
         : 'User created successfully. Please verify your email.',
       user: {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        role: user.role
+        role: normalizeRole(user.role),
+        status: 'pending' // New users are pending until email verified
       },
       isFirstUser: userCount === 0
     });
@@ -181,8 +205,8 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        isActive: user.isActive
+        role: normalizeRole(user.role),
+        status: getStatus(user)
       }
     });
   } catch (err) {
@@ -465,11 +489,8 @@ const getMe = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        isEmailVerified: user.isEmailVerified,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        role: normalizeRole(user.role),
+        status: getStatus(user)
       }
     });
   } catch (error) {
