@@ -22,11 +22,54 @@ const catalogItemSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  // For services: base price and duration (editable)
+  basePrice: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  defaultDurationMinutes: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
   estimatedTime: {
     type: String,
     trim: true,
     default: ''
   },
+  // Sub-options for services (e.g., Oil Change has filter, grade, make)
+  subOptions: [{
+    key: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    label: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    type: {
+      type: String,
+      enum: ['text', 'select', 'multiselect'],
+      default: 'text'
+    },
+    options: [{
+      type: String,
+      trim: true
+    }]
+  }],
+  // Allow comments for this service
+  allowComments: {
+    type: Boolean,
+    default: false
+  },
+  // Allowed parts for this service (e.g., ["Oil", "Oil Filter"])
+  allowedParts: [{
+    type: String,
+    trim: true
+  }],
   // For products
   quantity: {
     type: Number,

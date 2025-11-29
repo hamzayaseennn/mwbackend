@@ -62,7 +62,23 @@ const serviceSchema = new mongoose.Schema({
   details: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
-  }
+  },
+  // Sub-option values (e.g., { "oilFilter": "OEM", "oilGrade": "5W-30" })
+  subOptionValues: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  // Comments for this specific service item
+  comments: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  // Parts used for this service (e.g., ["Shell 5W-30", "OEM Oil Filter"])
+  partsUsed: [{
+    type: String,
+    trim: true
+  }]
 }, { _id: false, minimize: false });
 
 const jobSchema = new mongoose.Schema({
@@ -109,6 +125,12 @@ const jobSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+  // Overall comment about selected services
+  overallServiceComment: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true
