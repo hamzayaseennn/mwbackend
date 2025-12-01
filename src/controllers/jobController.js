@@ -6,6 +6,31 @@ const getIO = (req) => {
   return req.app.get('io');
 };
 
+// Helper function to clean and validate services
+const cleanServices = (services) => {
+  if (!services || !Array.isArray(services)) {
+    return [];
+  }
+  
+  return services.map(service => {
+    const cleanedService = { ...service };
+    
+    // Validate serviceId - must be a valid ObjectId or null
+    if (cleanedService.serviceId) {
+      // Check if it's a valid ObjectId (24 hex characters)
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(String(cleanedService.serviceId));
+      if (!isValidObjectId) {
+        // If not valid, set to null
+        cleanedService.serviceId = null;
+      }
+    } else {
+      cleanedService.serviceId = null;
+    }
+    
+    return cleanedService;
+  });
+};
+
 // @desc    Get all jobs
 // @route   GET /api/jobs
 // @access  Private
@@ -105,6 +130,9 @@ const createJob = async (req, res) => {
       });
     }
 
+    // Clean and validate services
+    const cleanedServices = cleanServices(services);
+
     const job = await Job.create({
       customer,
       vehicle,
@@ -114,7 +142,7 @@ const createJob = async (req, res) => {
       technician,
       estimatedTimeHours,
       amount: amount || 0,
-      services: services || [],
+      services: cleanedServices,
       notes: notes || ''
     });
 
@@ -176,7 +204,10 @@ const updateJob = async (req, res) => {
     if (technician !== undefined) job.technician = technician;
     if (estimatedTimeHours !== undefined) job.estimatedTimeHours = estimatedTimeHours;
     if (amount !== undefined) job.amount = amount;
-    if (services !== undefined) job.services = services;
+    if (services !== undefined) {
+      // Clean and validate services before updating
+      job.services = cleanServices(services);
+    }
     if (notes !== undefined) job.notes = notes;
 
     await job.save();

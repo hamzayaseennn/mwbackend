@@ -24,7 +24,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.4",
     "morgan": "^1.10.1",
-    "nodemailer": "^7.0.10",
+    "nodemailer": "^7.0.11",
+    "nodemailer-sendgrid": "^1.0.3",
+    "sendgrid": "^5.2.3",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

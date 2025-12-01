@@ -1,4 +1,5 @@
 const Customer = require('../models/Customer');
+const Vehicle = require('../models/Vehicle');
 
 // @desc    Get all customers
 // @route   GET /api/customers
@@ -195,7 +196,7 @@ const updateCustomer = async (req, res) => {
 
 // @desc    Delete customer (soft delete)
 // @route   DELETE /api/customers/:id
-// @access  Private
+// @access  Private (Admin only for hard delete with cascade)
 const deleteCustomer = async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
@@ -207,14 +208,30 @@ const deleteCustomer = async (req, res) => {
       });
     }
 
+    // Check if user is admin
+    const isAdmin = req.user && (req.user.role === 'Admin' || req.user.role === 'admin');
+
+    let vehiclesDeletedCount = 0;
+
+    // If admin, delete all vehicles associated with this customer
+    if (isAdmin) {
+      // Delete all vehicles associated with this customer
+      const deleteResult = await Vehicle.deleteMany({ customer: customer._id });
+      vehiclesDeletedCount = deleteResult.deletedCount;
+      console.log(`Deleted ${vehiclesDeletedCount} vehicle(s) associated with customer ${customer._id}`);
+    }
+
     // Soft delete: set isActive to false
     customer.isActive = false;
     await customer.save();
 
     res.status(200).json({
       success: true,
-      message: 'Customer deleted successfully',
-      data: customer
+      message: isAdmin 
+        ? `Customer and ${vehiclesDeletedCount} associated vehicle(s) deleted successfully`
+        : 'Customer deleted successfully',
+      data: customer,
+      vehiclesDeleted: vehiclesDeletedCount
     });
   } catch (error) {
     console.error('Delete customer error:', error);

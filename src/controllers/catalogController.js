@@ -104,7 +104,7 @@ exports.createCatalogItem = async (req, res) => {
       });
     }
 
-    const { name, type, description, cost, estimatedTime, quantity, unit, visibility } = req.body;
+    const { name, type, description, cost, basePrice, defaultDurationMinutes, estimatedTime, quantity, unit, visibility, subOptions, allowComments, allowedParts } = req.body;
 
     // Validate required fields
     if (!name || !type || cost === undefined) {
@@ -123,12 +123,17 @@ exports.createCatalogItem = async (req, res) => {
       type,
       description: description || '',
       cost,
+      basePrice: basePrice !== undefined ? basePrice : (type === 'service' ? cost : 0),
+      defaultDurationMinutes: defaultDurationMinutes !== undefined ? defaultDurationMinutes : 0,
       estimatedTime: estimatedTime || '',
       quantity: quantity || 0,
       unit: unit || 'piece',
       visibility: visibility || 'local',
       account,
-      isActive: true
+      isActive: true,
+      subOptions: subOptions || [],
+      allowComments: allowComments || false,
+      allowedParts: allowedParts || []
     });
 
     await catalogItem.save();
@@ -187,10 +192,15 @@ exports.updateCatalogItem = async (req, res) => {
     if (updates.type !== undefined) catalogItem.type = updates.type;
     if (updates.description !== undefined) catalogItem.description = updates.description;
     if (updates.cost !== undefined) catalogItem.cost = updates.cost;
+    if (updates.basePrice !== undefined) catalogItem.basePrice = updates.basePrice;
+    if (updates.defaultDurationMinutes !== undefined) catalogItem.defaultDurationMinutes = updates.defaultDurationMinutes;
     if (updates.estimatedTime !== undefined) catalogItem.estimatedTime = updates.estimatedTime;
     if (updates.quantity !== undefined) catalogItem.quantity = updates.quantity;
     if (updates.unit !== undefined) catalogItem.unit = updates.unit;
     if (updates.isActive !== undefined) catalogItem.isActive = updates.isActive;
+    if (updates.subOptions !== undefined) catalogItem.subOptions = updates.subOptions;
+    if (updates.allowComments !== undefined) catalogItem.allowComments = updates.allowComments;
+    if (updates.allowedParts !== undefined) catalogItem.allowedParts = updates.allowedParts;
 
     await catalogItem.save();
 
