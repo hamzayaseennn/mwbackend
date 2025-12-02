@@ -12,13 +12,13 @@ router.get('/', catalogController.getCatalog);
 // Get catalog items by type
 router.get('/type/:type', catalogController.getCatalogByType);
 
-// Create a new catalog item (Admin only)
+// Create a new catalog item (All authenticated users can create custom services)
 router.post('/', catalogController.createCatalogItem);
 
 // Update a catalog item (Admin only)
 router.put('/:id', catalogController.updateCatalogItem);
 
-// Delete a catalog item (Admin only)
+// Delete a catalog item (All users can delete their own custom services)
 router.delete('/:id', catalogController.deleteCatalogItem);
 
 module.exports = router;

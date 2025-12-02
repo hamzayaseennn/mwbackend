@@ -258,87 +258,109 @@ const getPopularServices = async (req, res) => {
 // @access  Private
 const getDailyPerformance = async (req, res) => {
   try {
-    const { days = 7 } = req.query;
+    const { days = 14 } = req.query; // Default to 14 days to ensure we cover current week
+    // Get current date and calculate start date
+    // We'll query with UTC dates but return dates in PKT format
+    // Calculate start date going back enough days to cover the range
     const now = new Date();
     const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - parseInt(days));
+    startDate.setDate(startDate.getDate() - parseInt(days) - 1); // Add 1 day buffer for timezone differences
     startDate.setHours(0, 0, 0, 0);
 
-    // Aggregate jobs by day
-    const dailyJobs = await Job.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-            day: { $dayOfMonth: '$createdAt' }
-          },
-          jobs: { $sum: 1 },
-          revenue: { $sum: '$amount' }
-        }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 }
+    // Helper function to convert UTC date (from MongoDB) to PKT date string (YYYY-MM-DD)
+    // PKT = Pakistan Time = UTC+5
+    const convertToPKTDateString = (utcDate) => {
+      if (!utcDate) return null;
+      try {
+        // MongoDB stores dates in UTC - create Date object
+        const date = new Date(utcDate);
+        if (isNaN(date.getTime())) return null;
+        
+        // Add 5 hours (18000000 ms) to convert UTC to PKT
+        const pktTimestamp = date.getTime() + (5 * 60 * 60 * 1000);
+        const pktDate = new Date(pktTimestamp);
+        
+        // Extract date components - the timestamp already has the 5-hour offset
+        // Use UTC methods to extract the date from the adjusted timestamp
+        const year = pktDate.getUTCFullYear();
+        const month = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(pktDate.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error('Error converting date to PKT:', error, utcDate);
+        return null;
       }
-    ]);
+    };
 
-    // Also get revenue from invoices
-    const dailyInvoices = await Invoice.aggregate([
-      {
-        $match: {
-          status: 'Paid',
-          date: { $gte: startDate },
-          isActive: true
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$date' },
-            month: { $month: '$date' },
-            day: { $dayOfMonth: '$date' }
-          },
-          revenue: { $sum: '$amount' }
-        }
+    // Get all paid invoices with their dates (we'll convert to PKT in JavaScript)
+    // Query a wider date range to ensure we capture all invoices for the current week in PKT
+    const queryStartDate = new Date(startDate);
+    queryStartDate.setDate(queryStartDate.getDate() - 1); // Add 1 day buffer for timezone differences
+    
+    const allInvoices = await Invoice.find({
+      status: 'Paid',
+      date: { $gte: queryStartDate },
+      isActive: true
+    }).select('date amount job').lean();
+
+    // Group invoices by PST date
+    const dailyInvoicesMap = {};
+    const dailyJobsMap = {};
+
+    allInvoices.forEach(invoice => {
+      const pktDateStr = convertToPKTDateString(invoice.date);
+      
+      if (!pktDateStr) return; // Skip if date conversion failed
+      
+      // Count revenue
+      if (!dailyInvoicesMap[pktDateStr]) {
+        dailyInvoicesMap[pktDateStr] = 0;
       }
-    ]);
+      dailyInvoicesMap[pktDateStr] += invoice.amount || 0;
 
-    // Combine and format data
+      // Count completed jobs (invoices with job reference)
+      if (invoice.job) {
+        if (!dailyJobsMap[pktDateStr]) {
+          dailyJobsMap[pktDateStr] = 0;
+        }
+        dailyJobsMap[pktDateStr] += 1;
+      }
+    });
+
+    // Generate PKT dates for the date range (last N days, most recent first)
+    // Calculate current PKT date (UTC+5)
+    const nowUTC = new Date();
+    const nowPKTTimestamp = nowUTC.getTime() + (5 * 60 * 60 * 1000); // Convert to PKT
+    const todayPKT = new Date(nowPKTTimestamp);
+    todayPKT.setUTCHours(0, 0, 0, 0);
+    todayPKT.setUTCMinutes(0, 0, 0);
+    todayPKT.setUTCSeconds(0, 0);
+
+    // Combine and format data - return dates in PKT format (most recent first)
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dailyStats = [];
 
-    for (let i = 0; i < parseInt(days); i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
+    for (let i = parseInt(days) - 1; i >= 0; i--) {
+      // Calculate date going back from today in PKT
+      const targetTimestamp = todayPKT.getTime() - (i * 24 * 60 * 60 * 1000);
+      const pktDate = new Date(targetTimestamp);
       
-      const dayKey = {
-        year: date.getFullYear(),
-        month: date.getMonth() + 1,
-        day: date.getDate()
-      };
+      // Get PKT date string (YYYY-MM-DD) using UTC methods (since we've adjusted the timestamp)
+      const year = pktDate.getUTCFullYear();
+      const month = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(pktDate.getUTCDate()).padStart(2, '0');
+      const pktDateStr = `${year}-${month}-${day}`;
 
-      const jobData = dailyJobs.find(j => 
-        j._id.year === dayKey.year && 
-        j._id.month === dayKey.month && 
-        j._id.day === dayKey.day
-      );
+      // Get jobs and revenue for this PKT date
+      const jobs = dailyJobsMap[pktDateStr] || 0;
+      const revenue = dailyInvoicesMap[pktDateStr] || 0;
 
-      const invoiceData = dailyInvoices.find(inv => 
-        inv._id.year === dayKey.year && 
-        inv._id.month === dayKey.month && 
-        inv._id.day === dayKey.day
-      );
-
+      // Return date in PKT format
       dailyStats.push({
-        day: dayNames[date.getDay()],
-        date: date.toISOString().split('T')[0],
-        jobs: jobData?.jobs || 0,
-        revenue: (invoiceData?.revenue || 0) + (jobData?.revenue || 0)
+        day: dayNames[pktDate.getUTCDay()],
+        date: pktDateStr,
+        jobs: jobs,
+        revenue: revenue
       });
     }
 

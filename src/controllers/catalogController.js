@@ -14,21 +14,30 @@ exports.getCatalog = async (req, res) => {
       });
     }
 
-    // Get default items (visibility: 'default')
+    // Get default items (visibility: 'default') - These are the original/past services
+    // These are global services that are visible to all users and are never deleted
     const defaultItems = await Catalog.find({
       visibility: 'default',
       isActive: true
     });
 
     // Get account-specific items (visibility: 'local', account: userId)
+    // These include ALL custom services the user has added (past and new)
+    // All custom services added by this user are shown alongside the default services
     const localItems = await Catalog.find({
       visibility: 'local',
       account: userId,
       isActive: true
     });
 
-    // Combine both
-    const allItems = [...defaultItems, ...localItems];
+    // Combine both - original default services + all user's custom services (past + new)
+    // This ensures: past default services + past custom services + new custom services are all shown together
+    // All services are preserved and displayed together, sorted alphabetically for easy finding
+    const allItems = [...defaultItems, ...localItems].sort((a, b) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     res.status(200).json({
       success: true,
@@ -73,7 +82,13 @@ exports.getCatalogByType = async (req, res) => {
       isActive: true
     });
 
-    const allItems = [...defaultItems, ...localItems];
+    // Combine default and local items, sorted alphabetically by name
+    // This ensures all services (past default + user's custom services) are shown together
+    const allItems = [...defaultItems, ...localItems].sort((a, b) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     res.status(200).json({
       success: true,
@@ -90,20 +105,11 @@ exports.getCatalogByType = async (req, res) => {
   }
 };
 
-// Create a new catalog item (Admin only)
+// Create a new catalog item (All authenticated users can create custom services)
 exports.createCatalogItem = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-
-    // Check if user is Admin
-    if (user.role !== 'Admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Admins can manage catalog items'
-      });
-    }
-
     const { name, type, description, cost, basePrice, defaultDurationMinutes, estimatedTime, quantity, unit, visibility, subOptions, allowComments, allowedParts } = req.body;
 
     // Validate required fields
@@ -114,9 +120,20 @@ exports.createCatalogItem = async (req, res) => {
       });
     }
 
-    // If visibility is 'local', set account to current user
-    // If visibility is 'default', account should be null (only super admins can create defaults)
-    const account = visibility === 'local' ? userId : null;
+    // Determine visibility: Only admins can create 'default' items, others create 'local' items
+    // IMPORTANT: Custom services added by users are saved as 'local' items
+    // This means they are added ALONGSIDE existing default services, not replacing them
+    // Past/default services remain intact and are always visible
+    let finalVisibility = visibility || 'local';
+    if (finalVisibility === 'default' && user.role !== 'Admin') {
+      // Non-admins cannot create default items, force to 'local'
+      // This ensures past services are never overwritten
+      finalVisibility = 'local';
+    }
+    
+    // If visibility is 'local', set account to current user (permanently saved to user's catalog)
+    // Local items are added in addition to default items, not replacing them
+    const account = finalVisibility === 'local' ? userId : null;
 
     const catalogItem = new Catalog({
       name,
@@ -128,7 +145,7 @@ exports.createCatalogItem = async (req, res) => {
       estimatedTime: estimatedTime || '',
       quantity: quantity || 0,
       unit: unit || 'piece',
-      visibility: visibility || 'local',
+      visibility: finalVisibility,
       account,
       isActive: true,
       subOptions: subOptions || [],
@@ -219,20 +236,10 @@ exports.updateCatalogItem = async (req, res) => {
   }
 };
 
-// Delete a catalog item (Admin only)
+// Delete a catalog item (All users can delete their own custom services)
 exports.deleteCatalogItem = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId);
-
-    // Check if user is Admin
-    if (user.role !== 'Admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Admins can manage catalog items'
-      });
-    }
-
     const { id } = req.params;
 
     const catalogItem = await Catalog.findById(id);
@@ -244,9 +251,17 @@ exports.deleteCatalogItem = async (req, res) => {
       });
     }
 
-    // Check if user owns this item (for local items)
-    // Default items cannot be deleted (only deactivated)
+    // IMPORTANT: Default items cannot be deleted by anyone (only deactivated by admins)
+    // Past services with 'default' visibility are protected and never deleted
     if (catalogItem.visibility === 'default') {
+      const user = await User.findById(userId);
+      // Only admins can deactivate default items
+      if (user.role !== 'Admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Default catalog items cannot be deleted. Only admins can deactivate them.'
+        });
+      }
       // For default items, just deactivate instead of deleting
       catalogItem.isActive = false;
       await catalogItem.save();
@@ -258,18 +273,22 @@ exports.deleteCatalogItem = async (req, res) => {
       });
     }
 
-    if (catalogItem.account?.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only delete your own catalog items'
-      });
+    // For local (custom) items: Users can only delete their own custom services
+    if (catalogItem.visibility === 'local') {
+      if (!catalogItem.account || catalogItem.account.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only delete your own custom services'
+        });
+      }
     }
 
+    // Delete the custom service
     await Catalog.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: 'Catalog item deleted successfully'
+      message: 'Custom service deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting catalog item:', error);
