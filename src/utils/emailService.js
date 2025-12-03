@@ -239,13 +239,24 @@ const sendEmail = async ({ to, subject, text, html }) => {
     const transporter = createTransporter();
     
     if (!transporter) {
+      // Extract OTP from text if present (6-digit number)
+      const otpMatch = text ? text.match(/\b\d{6}\b/) : null;
+      const otp = otpMatch ? otpMatch[0] : null;
+      
       console.log('\n========================================');
       console.log('📧 EMAIL (Development Mode)');
       console.log('========================================');
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
+      if (otp) {
+        console.log(`\n🔑 OTP: ${otp}\n`);
+      }
       console.log(`Text: ${text || html || ''}`);
       console.log('========================================\n');
+      console.log('⚠️  Email not configured. Add EMAIL_USER and EMAIL_PASSWORD to .env file');
+      if (otp) {
+        console.log(`💡 Use the OTP above (${otp}) to proceed.\n`);
+      }
       return { success: true };
     }
 

@@ -240,6 +240,17 @@ const forgotPassword = async (req, res) => {
     user.passwordResetOTPExpire = Date.now() + 10 * 60 * 1000; // 10 min
     await user.save({ validateBeforeSave: false });
 
+    // Log OTP immediately for development/debugging
+    console.log('\n========================================');
+    console.log('🔑 PASSWORD RESET OTP');
+    console.log('========================================');
+    console.log(`Email: ${email}`);
+    console.log(`User: ${user.name}`);
+    console.log(`OTP: ${otp}`);
+    console.log(`User ID: ${user._id}`);
+    console.log(`Expires in: 10 minutes`);
+    console.log('========================================\n');
+
     // Send email
     try {
       await sendEmail({
@@ -263,7 +274,6 @@ const forgotPassword = async (req, res) => {
           </div>
         `
       });
-      console.log(`DEBUG: Password reset OTP for ${email} is ${otp}`); // For testing
     } catch (err) {
       user.passwordResetOTP = undefined;
       user.passwordResetOTPExpire = undefined;
